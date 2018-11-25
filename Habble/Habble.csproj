@@ -27,4 +27,10 @@
     <ProjectReference Include="..\Submodules\Sulakore\Sulakore\Sulakore.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="hashes.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
