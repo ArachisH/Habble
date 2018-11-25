@@ -49,8 +49,8 @@ namespace Habble
             var trigger = TriggerBuilder.Create()
                 .WithDailyTimeIntervalSchedule(s => s
                     .OnEveryDay()
-                    .WithIntervalInSeconds(6)
-                    .StartingDailyAt(TimeOfDay.HourAndMinuteOfDay(2, 0)))
+                    .WithIntervalInHours(6)
+                    .StartingDailyAt(TimeOfDay.HourAndMinuteOfDay(0, 0)))
                 .Build();
 
             await _scheduler.ScheduleJob(
