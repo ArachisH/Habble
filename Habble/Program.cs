@@ -60,6 +60,8 @@ namespace Habble
             while (!_scheduler.IsShutdown)
             {
                 string line = Console.ReadLine();
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
                 var arguments = new Queue<string>(line.Split(' '));
                 if (!_commands.TryGetValue(arguments.Dequeue().Trim().ToLower(), out PhysicalCommandAttribute command)) continue;
 
