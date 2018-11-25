@@ -70,7 +70,7 @@ namespace Habble.Jobs
             var nextFireDate = (context.NextFireTimeUtc ?? DateTimeOffset.MinValue);
             if (nextFireDate != DateTimeOffset.MinValue)
             {
-                ("Upcoming Revision Check: ", nextFireDate.ToString("MM/dd/yyyy hh:mm:ss tt")).WriteLine(null, ConsoleColor.Yellow);
+                ("Upcoming Revision Check: ", nextFireDate.ToString("MM/dd/yyyy HH:mm:ss UTC")).WriteLine(null, ConsoleColor.Yellow);
             }
         }
 
