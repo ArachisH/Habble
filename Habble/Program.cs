@@ -40,7 +40,7 @@ namespace Habble
         {
             EmptyLine();
             @"    _   _       _     _     _      ".AppendLine(LOGO_COLOR);
-            @"   | | | | __ _| |__ | |__ | | ___ ".AppendLine(LOGO_COLOR);
+            @"   | | | | __ _| |__ | asd|__ | | ___ ".AppendLine(LOGO_COLOR);
             @"   | |_| |/ _` | '_ \| '_ \| |/ _ \".AppendLine(LOGO_COLOR);
             @"   |  _  | (_| | |_) | |_) | |  __/".AppendLine(LOGO_COLOR);
             @"   |_| |_|\__,_|_.__/|_.__/|_|\___|".AppendLine(LOGO_COLOR);
@@ -50,7 +50,7 @@ namespace Habble
                 .WithDailyTimeIntervalSchedule(s => s
                     .OnEveryDay()
                     .WithIntervalInHours(6)
-                    .StartingDailyAt(TimeOfDay.HourAndMinuteOfDay(1, 56)))
+                    .StartingDailyAt(TimeOfDay.HourAndMinuteOfDay(1, 58)))
                 .Build();
 
             await _scheduler.ScheduleJob(
