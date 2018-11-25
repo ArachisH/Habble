@@ -14,15 +14,18 @@ namespace Habble
 {
     public class Program
     {
+        private TriggerKey _checkScheduleKey;
         private readonly IScheduler _scheduler;
+        private readonly IJobDetail _checkRevisionsJob;
         private readonly IDictionary<string, PhysicalCommandAttribute> _commands;
 
         private const ConsoleColor LOGO_COLOR = ConsoleColor.DarkCyan;
 
         public Program()
         {
-            _scheduler = new StdSchedulerFactory().GetScheduler().GetAwaiter().GetResult();
             _commands = new Dictionary<string, PhysicalCommandAttribute>();
+            _checkRevisionsJob = JobBuilder.Create<RevisionUpdaterJob>().Build();
+            _scheduler = new StdSchedulerFactory().GetScheduler().GetAwaiter().GetResult();
 
             foreach (MethodInfo method in GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance))
             {
@@ -46,15 +49,7 @@ namespace Habble
             @"   |_| |_|\__,_|_.__/|_.__/|_|\___|".AppendLine(LOGO_COLOR);
             EmptyLine();
 
-            var trigger = TriggerBuilder.Create()
-                .WithDailyTimeIntervalSchedule(s => s
-                    .OnEveryDay()
-                    .WithIntervalInHours(6)
-                    .StartingDailyAt(TimeOfDay.HourAndMinuteOfDay(0, 0)))
-                .Build();
-
-            await _scheduler.ScheduleJob(
-                JobBuilder.Create<RevisionUpdaterJob>().Build(), trigger).ConfigureAwait(false);
+            await RescheduleCheckCommandAsync("0 0 0/6 1/1 * ? *").ConfigureAwait(false);
 
             await _scheduler.Start().ConfigureAwait(false);
             while (!_scheduler.IsShutdown)
@@ -94,6 +89,23 @@ namespace Habble
             return _scheduler.ScheduleJob(
                 JobBuilder.Create<RevisionUpdaterJob>().Build(),
                 TriggerBuilder.Create().StartNow().Build());
+        }
+
+        [PhysicalCommand("rc")]
+        private async Task RescheduleCheckCommandAsync(string cronExpression)
+        {
+            ITrigger trigger = TriggerBuilder.Create()
+                .WithCronSchedule(cronExpression, c => c.InTimeZone(TimeZoneInfo.Utc))
+                .Build();
+
+            if (_checkScheduleKey != null)
+            {
+                _scheduler.RescheduleJob(_checkScheduleKey, trigger).GetAwaiter().GetResult();
+            }
+            else await _scheduler.ScheduleJob(_checkRevisionsJob, trigger).ConfigureAwait(false);
+
+            _checkScheduleKey = trigger.Key;
+            ("Upcoming Revision Check: ", $"{trigger.GetNextFireTimeUtc():MM/dd/yyyy HH:mm:ss} UTC").WriteLine(null, ConsoleColor.Yellow);
         }
         #endregion
     }
