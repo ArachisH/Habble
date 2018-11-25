@@ -50,7 +50,7 @@ namespace Habble
                 .WithDailyTimeIntervalSchedule(s => s
                     .OnEveryDay()
                     .WithIntervalInHours(6)
-                    .StartingDailyAt(TimeOfDay.HourAndMinuteOfDay(1, 53)))
+                    .StartingDailyAt(TimeOfDay.HourAndMinuteOfDay(1, 56)))
                 .Build();
 
             await _scheduler.ScheduleJob(
