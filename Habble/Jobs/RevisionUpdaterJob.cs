@@ -32,8 +32,11 @@ namespace Habble.Jobs
             var lastChecked = DateTime.UtcNow;
             var lastCheckedGroups = new List<LastCheckedGroup>();
 
-            // Ensure this path exists before attempting to read/write from this directory
             Directory.CreateDirectory(BASE_DIRECTORY + "revisions");
+            if (!File.Exists(BASE_DIRECTORY + "Hashes.ini"))
+            {
+                File.Copy("Hashes.ini", BASE_DIRECTORY + "Hashes.ini");
+            }
 
             Array hotels = Enum.GetValues(typeof(HHotel));
             foreach (HHotel hotel in hotels)
@@ -43,10 +46,7 @@ namespace Habble.Jobs
                 string revision = await HAPI.GetLatestRevisionAsync(hotel).ConfigureAwait(false);
                 lastCheckedGroups.Add(new LastCheckedGroup(hotel, revision, lastChecked));
 
-                if (File.Exists($"{BASE_DIRECTORY}revisions/{revision}.json"))
-                {
-                    continue;
-                }
+                if (File.Exists($"{BASE_DIRECTORY}revisions/{revision}.json")) continue;
 
                 newRevisions++;
                 ("Extracting Messages(Name, Hash, Structure)... | ", revision).WriteLine(null, ConsoleColor.Yellow);
@@ -58,8 +58,8 @@ namespace Habble.Jobs
                 {
                     game.Revision,
                     game.FileLength,
-                    Incoming = GetGroupedMessages(game, new Incoming(game, $"{BASE_DIRECTORY}hashes.ini")),
-                    Outgoing = GetGroupedMessages(game, new Outgoing(game, $"{BASE_DIRECTORY}hashes.ini"))
+                    Incoming = GetGroupedMessages(game, new Incoming(game, $"{BASE_DIRECTORY}Hashes.ini")),
+                    Outgoing = GetGroupedMessages(game, new Outgoing(game, $"{BASE_DIRECTORY}Hashes.ini"))
                 }))
                 .ConfigureAwait(false);
             }
@@ -70,7 +70,7 @@ namespace Habble.Jobs
             var nextFireDate = (context.NextFireTimeUtc ?? DateTimeOffset.MinValue);
             if (nextFireDate != DateTimeOffset.MinValue)
             {
-                ("Upcoming Revision Check: ", nextFireDate.ToString("MM/dd/yyyy HH:mm:ss UTC")).WriteLine(null, ConsoleColor.Yellow);
+                ("Upcoming Revision Check: ", nextFireDate.ToString("MM/dd/yyyy HH:mm:ss GMT")).WriteLine(null, ConsoleColor.Yellow);
             }
         }
 

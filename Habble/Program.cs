@@ -105,7 +105,7 @@ namespace Habble
             else await _scheduler.ScheduleJob(_checkRevisionsJob, trigger).ConfigureAwait(false);
 
             _checkScheduleKey = trigger.Key;
-            ("Upcoming Revision Check: ", $"{trigger.GetNextFireTimeUtc():MM/dd/yyyy HH:mm:ss} UTC").WriteLine(null, ConsoleColor.Yellow);
+            ("Upcoming Revision Check: ", $"{trigger.GetNextFireTimeUtc():MM/dd/yyyy HH:mm:ss} GMT").WriteLine(null, ConsoleColor.Yellow);
         }
         #endregion
     }

@@ -112,7 +112,7 @@ namespace Habble.Utilities
         }
         public static void AppendTimestamp()
         {
-            Console.Write($"[{DateTime.UtcNow:MM/dd/yyyy HH:mm:ss} UTC] ");
+            Console.Write($"[{DateTime.UtcNow:MM/dd/yyyy HH:mm:ss} GMT] ");
         }
         public static void ClearLine(int topOffset = 0)
         {
