@@ -24,6 +24,13 @@ namespace Habble.Jobs
             "/var/www/sites/api.harble.net/";
 #endif
 
+        private const string HASHES_PATH =
+#if !DEBUG
+            "Hashes.ini";
+#else
+            BASE_DIRECTORY + "hashes.ini";
+#endif
+
         public async Task Execute(IJobExecutionContext context)
         {
             "Updating Revisions...".WriteLine(ConsoleColor.Cyan);
@@ -33,9 +40,9 @@ namespace Habble.Jobs
             var lastCheckedGroups = new List<LastCheckedGroup>();
 
             Directory.CreateDirectory(BASE_DIRECTORY + "revisions");
-            if (!File.Exists(BASE_DIRECTORY + "Hashes.ini"))
+            if (!File.Exists(BASE_DIRECTORY + "hashes.ini"))
             {
-                File.Copy("Hashes.ini", BASE_DIRECTORY + "Hashes.ini");
+                File.Copy("Hashes.ini", BASE_DIRECTORY + "hashes.ini");
             }
 
             Array hotels = Enum.GetValues(typeof(HHotel));
@@ -58,8 +65,8 @@ namespace Habble.Jobs
                 {
                     game.Revision,
                     game.FileLength,
-                    Incoming = GetGroupedMessages(game, new Incoming(game, $"{BASE_DIRECTORY}Hashes.ini")),
-                    Outgoing = GetGroupedMessages(game, new Outgoing(game, $"{BASE_DIRECTORY}Hashes.ini"))
+                    Incoming = GetGroupedMessages(game, new Incoming(game, HASHES_PATH)),
+                    Outgoing = GetGroupedMessages(game, new Outgoing(game, HASHES_PATH))
                 }))
                 .ConfigureAwait(false);
             }
