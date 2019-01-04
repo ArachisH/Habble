@@ -16,13 +16,15 @@ namespace Habble
     {
         private TriggerKey _checkScheduleKey;
         private readonly IScheduler _scheduler;
+        private readonly Queue<string> _arguments;
         private readonly IJobDetail _checkRevisionsJob;
         private readonly IDictionary<string, PhysicalCommandAttribute> _commands;
 
         private const ConsoleColor LOGO_COLOR = ConsoleColor.DarkCyan;
 
-        public Program()
+        public Program(string[] args)
         {
+            _arguments = new Queue<string>(args);
             _commands = new Dictionary<string, PhysicalCommandAttribute>();
             _checkRevisionsJob = JobBuilder.Create<RevisionUpdaterJob>().Build();
             _scheduler = new StdSchedulerFactory().GetScheduler().GetAwaiter().GetResult();
@@ -36,8 +38,7 @@ namespace Habble
                 _commands.Add(commandAtt.Name, commandAtt);
             }
         }
-        public static void Main(string[] args) =>
-            new Program().RunAsync().GetAwaiter().GetResult();
+        public static void Main(string[] args) => new Program(args).RunAsync().GetAwaiter().GetResult();
 
         public async Task RunAsync()
         {
@@ -54,7 +55,7 @@ namespace Habble
             await _scheduler.Start().ConfigureAwait(false);
             while (!_scheduler.IsShutdown)
             {
-                string line = Console.ReadLine();
+                string line = _arguments.Count > 0 ? _arguments.Dequeue() : Console.ReadLine();
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
                 var arguments = new Queue<string>(line.Split(' '));
@@ -84,11 +85,19 @@ namespace Habble
         }
 
         [PhysicalCommand("check")]
-        private Task CheckCommand()
+        private Task CheckCommandAsync()
         {
             return _scheduler.ScheduleJob(
                 JobBuilder.Create<RevisionUpdaterJob>().Build(),
                 TriggerBuilder.Create().StartNow().Build());
+        }
+
+        [PhysicalCommand("chex")]
+        private async Task CheckExitCommandAsync()
+        {
+            await _scheduler.TriggerJob(_checkRevisionsJob.Key).ConfigureAwait(false);
+            await _scheduler.Shutdown(true).ConfigureAwait(false);
+            "Shutting Down...".WriteLine(ConsoleColor.Yellow);
         }
 
         [PhysicalCommand("rc")]
