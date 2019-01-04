@@ -20,7 +20,7 @@ namespace Habble.Jobs
         private readonly string _hashesPath = AppDomain.CurrentDomain.BaseDirectory + "Hashes.ini";
         private readonly string _apiDirectory =
 #if DEBUG
-            Environment.CurrentDirectory + "\\api.harble.net\\";
+            Environment.CurrentDirectory + "/api.harble.net/";
 #else
             "/var/www/sites/api.harble.net/";
 #endif
@@ -47,7 +47,7 @@ namespace Habble.Jobs
                 string revision = await HAPI.GetLatestRevisionAsync(hotel).ConfigureAwait(false);
                 lastCheckedGroups.Add(new LastCheckedGroup(hotel, revision, lastChecked));
 
-                if (File.Exists($"{_apiDirectory}revisions\\{revision}.json")) continue;
+                if (File.Exists($"{_apiDirectory}revisions/{revision}.json")) continue;
 
                 newRevisions++;
                 ("Extracting Messages(Name, Hash, Structure)... | ", revision).WriteLine(null, ConsoleColor.Yellow);
@@ -55,7 +55,7 @@ namespace Habble.Jobs
                 HGame game = await HAPI.GetGameAsync(revision).ConfigureAwait(false);
                 game.GenerateMessageHashes();
 
-                await File.WriteAllTextAsync($"{_apiDirectory}revisions\\{revision}.json", JsonConvert.SerializeObject(new
+                await File.WriteAllTextAsync($"{_apiDirectory}revisions/{revision}.json", JsonConvert.SerializeObject(new
                 {
                     game.Revision,
                     game.FileLength,
