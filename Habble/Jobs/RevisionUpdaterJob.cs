@@ -17,18 +17,12 @@ namespace Habble.Jobs
 {
     public class RevisionUpdaterJob : IJob
     {
-        private const string BASE_DIRECTORY =
+        private readonly string _hashesPath = AppDomain.CurrentDomain.BaseDirectory + "Hashes.ini";
+        private readonly string _apiDirectory =
 #if DEBUG
-            "";
+            Environment.CurrentDirectory + "\\api.harble.net\\";
 #else
-            "/var/www/sites/api.harble.net/";
-#endif
-
-        private const string HASHES_PATH =
-#if !DEBUG
-            "Hashes.ini";
-#else
-            BASE_DIRECTORY + "hashes.ini";
+            "\\var\\www\\sites\\api.harble.net\\";
 #endif
 
         public async Task Execute(IJobExecutionContext context)
@@ -39,10 +33,10 @@ namespace Habble.Jobs
             var lastChecked = DateTime.UtcNow;
             var lastCheckedGroups = new List<LastCheckedGroup>();
 
-            Directory.CreateDirectory(BASE_DIRECTORY + "revisions");
-            if (!File.Exists(BASE_DIRECTORY + "hashes.ini"))
+            Directory.CreateDirectory(_apiDirectory + "revisions");
+            if (!File.Exists(_apiDirectory + "hashes.ini"))
             {
-                File.Copy("Hashes.ini", BASE_DIRECTORY + "hashes.ini");
+                File.Copy(_hashesPath, _apiDirectory + "hashes.ini");
             }
 
             Array hotels = Enum.GetValues(typeof(HHotel));
@@ -53,7 +47,7 @@ namespace Habble.Jobs
                 string revision = await HAPI.GetLatestRevisionAsync(hotel).ConfigureAwait(false);
                 lastCheckedGroups.Add(new LastCheckedGroup(hotel, revision, lastChecked));
 
-                if (File.Exists($"{BASE_DIRECTORY}revisions/{revision}.json")) continue;
+                if (File.Exists($"{_apiDirectory}revisions\\{revision}.json")) continue;
 
                 newRevisions++;
                 ("Extracting Messages(Name, Hash, Structure)... | ", revision).WriteLine(null, ConsoleColor.Yellow);
@@ -61,18 +55,18 @@ namespace Habble.Jobs
                 HGame game = await HAPI.GetGameAsync(revision).ConfigureAwait(false);
                 game.GenerateMessageHashes();
 
-                await File.WriteAllTextAsync($"{BASE_DIRECTORY}revisions/{revision}.json", JsonConvert.SerializeObject(new
+                await File.WriteAllTextAsync($"{_apiDirectory}revisions\\{revision}.json", JsonConvert.SerializeObject(new
                 {
                     game.Revision,
                     game.FileLength,
-                    Incoming = GetGroupedMessages(game, new Incoming(game, HASHES_PATH)),
-                    Outgoing = GetGroupedMessages(game, new Outgoing(game, HASHES_PATH))
+                    Incoming = GetGroupedMessages(game, new Incoming(game, _hashesPath)),
+                    Outgoing = GetGroupedMessages(game, new Outgoing(game, _hashesPath))
                 }))
                 .ConfigureAwait(false);
             }
 
             ("Revision Updates Found: ", newRevisions).WriteLine(null, ConsoleColor.Green);
-            await File.WriteAllTextAsync($"{BASE_DIRECTORY}last.json", JsonConvert.SerializeObject(lastCheckedGroups)).ConfigureAwait(false);
+            await File.WriteAllTextAsync($"{_apiDirectory}last.json", JsonConvert.SerializeObject(lastCheckedGroups)).ConfigureAwait(false);
 
             var nextFireDate = (context.NextFireTimeUtc ?? DateTimeOffset.MinValue);
             if (nextFireDate != DateTimeOffset.MinValue)
@@ -88,7 +82,7 @@ namespace Habble.Jobs
             {
                 if (id == ushort.MaxValue) continue;
 
-                string[] structure = null;
+                string structure = null;
                 string name = identifiers.GetName(id);
                 string hash = identifiers.GetHash(id);
 
@@ -107,9 +101,9 @@ namespace Habble.Jobs
         {
             public string Name { get; }
             public string Hash { get; }
-            public string[] Structure { get; }
+            public string Structure { get; }
 
-            public MessageGroup(string name, string hash, string[] structure)
+            public MessageGroup(string name, string hash, string structure)
             {
                 Name = name;
                 Hash = hash;
