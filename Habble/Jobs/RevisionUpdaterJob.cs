@@ -22,7 +22,7 @@ namespace Habble.Jobs
 #if DEBUG
             Environment.CurrentDirectory + "\\api.harble.net\\";
 #else
-            "\\var\\www\\sites\\api.harble.net\\";
+            "/var/www/sites/api.harble.net/";
 #endif
 
         public async Task Execute(IJobExecutionContext context)
