@@ -34,7 +34,7 @@ namespace Habble.Jobs
             var lastCheckedGroups = new List<LastCheckedGroup>();
 
             Directory.CreateDirectory(_apiDirectory + "revisions");
-            File.Copy(_hashesPath, _apiDirectory + "hashes.ini", true); // Always attempt to copy hashes, in case they may have been updated manually.
+            File.Copy(_hashesPath, _apiDirectory + "hashes.ini", true); // Always attempt to copy the hashes, in case they may have been updated manually.
 
             Array hotels = Enum.GetValues(typeof(HHotel));
             foreach (HHotel hotel in hotels)
