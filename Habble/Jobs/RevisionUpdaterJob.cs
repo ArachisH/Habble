@@ -33,7 +33,7 @@ namespace Habble.Jobs
             var lastChecked = DateTime.UtcNow;
             var lastCheckedGroups = new List<LastCheckedGroup>();
 
-            Directory.CreateDirectory(_apiDirectory + "revisions");
+            Directory.CreateDirectory(_apiDirectory + "messages");
             File.Copy(_hashesPath, _apiDirectory + "hashes.ini", true); // Always attempt to copy the hashes, in case they may have been updated manually.
 
             Array hotels = Enum.GetValues(typeof(HHotel));
@@ -44,20 +44,20 @@ namespace Habble.Jobs
                 string revision = await HAPI.GetLatestRevisionAsync(hotel).ConfigureAwait(false);
                 lastCheckedGroups.Add(new LastCheckedGroup(hotel, revision, lastChecked));
 
-                if (File.Exists($"{_apiDirectory}revisions/{revision}.json")) continue;
+                if (File.Exists($"{_apiDirectory}messages/{revision}.json")) continue;
 
                 newRevisions++;
-                ("Extracting Messages(Name, Hash, Structure)... | ", revision).WriteLine(null, ConsoleColor.Yellow);
+                ("Extracting Messages(Id, Name, Hash, Structure)... | ", revision).WriteLine(null, ConsoleColor.Yellow);
 
                 HGame game = await HAPI.GetGameAsync(revision).ConfigureAwait(false);
                 game.GenerateMessageHashes();
 
-                await File.WriteAllTextAsync($"{_apiDirectory}revisions/{revision}.json", JsonConvert.SerializeObject(new
+                await File.WriteAllTextAsync($"{_apiDirectory}messages/{revision}.json", JsonConvert.SerializeObject(new
                 {
                     game.Revision,
                     game.FileLength,
-                    Incoming = GetGroupedMessages(game, new Incoming(game, _hashesPath)),
-                    Outgoing = GetGroupedMessages(game, new Outgoing(game, _hashesPath))
+                    Incoming = GetMessages(game, new Incoming(game, _hashesPath)),
+                    Outgoing = GetMessages(game, new Outgoing(game, _hashesPath))
                 }))
                 .ConfigureAwait(false);
             }
@@ -65,16 +65,16 @@ namespace Habble.Jobs
             ("Revision Updates Found: ", newRevisions).WriteLine(null, ConsoleColor.Green);
             await File.WriteAllTextAsync($"{_apiDirectory}last.json", JsonConvert.SerializeObject(lastCheckedGroups)).ConfigureAwait(false);
 
-            var nextFireDate = (context.NextFireTimeUtc ?? DateTimeOffset.MinValue);
+            var nextFireDate = context.NextFireTimeUtc ?? DateTimeOffset.MinValue;
             if (nextFireDate != DateTimeOffset.MinValue)
             {
                 ("Upcoming Revision Check: ", nextFireDate.ToString("MM/dd/yyyy HH:mm:ss GMT")).WriteLine(null, ConsoleColor.Yellow);
             }
         }
 
-        private Dictionary<ushort, MessageGroup> GetGroupedMessages(HGame game, Identifiers identifiers)
+        private List<Message> GetMessages(HGame game, Identifiers identifiers)
         {
-            var messageGroups = new Dictionary<ushort, MessageGroup>();
+            var messageGroups = new List<Message>();
             foreach (ushort id in identifiers)
             {
                 if (id == ushort.MaxValue) continue;
@@ -89,19 +89,21 @@ namespace Habble.Jobs
                     structure = message.Structure;
                 }
 
-                messageGroups.Add(id, new MessageGroup(name, hash, structure));
+                messageGroups.Add(new Message(id, name, hash, structure));
             }
             return messageGroups;
         }
 
-        private struct MessageGroup
+        private struct Message
         {
+            public ushort Id { get; }
             public string Name { get; }
             public string Hash { get; }
             public string Structure { get; }
 
-            public MessageGroup(string name, string hash, string structure)
+            public Message(ushort id, string name, string hash, string structure)
             {
+                Id = id;
                 Name = name;
                 Hash = hash;
                 Structure = structure;
