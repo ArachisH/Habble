@@ -44,6 +44,8 @@ namespace Habble.Jobs
                 string revision = await HAPI.GetLatestRevisionAsync(hotel).ConfigureAwait(false);
                 lastCheckedGroups.Add(new LastCheckedGroup(hotel, revision, lastChecked));
 
+                if (File.Exists($"{_apiDirectory}revisions/{revision}.json") && File.Exists($"{_apiDirectory}messages/{revision}.json")) continue;
+
                 ("Extracting Messages(Id, Name, Hash, Structure)... | ", revision).WriteLine(null, ConsoleColor.Yellow);
                 HGame game = await HAPI.GetGameAsync(revision).ConfigureAwait(false);
                 game.GenerateMessageHashes();
