@@ -29,11 +29,11 @@ namespace Habble.Jobs
         {
             "Updating Revisions...".WriteLine(ConsoleColor.Cyan);
 
-            int newRevisions = 0;
             var lastChecked = DateTime.UtcNow;
             var lastCheckedGroups = new List<LastCheckedGroup>();
 
             Directory.CreateDirectory(_apiDirectory + "messages");
+            Directory.CreateDirectory(_apiDirectory + "revisions");
             File.Copy(_hashesPath, _apiDirectory + "hashes.ini", true); // Always attempt to copy the hashes, in case they may have been updated manually.
 
             Array hotels = Enum.GetValues(typeof(HHotel));
@@ -44,11 +44,7 @@ namespace Habble.Jobs
                 string revision = await HAPI.GetLatestRevisionAsync(hotel).ConfigureAwait(false);
                 lastCheckedGroups.Add(new LastCheckedGroup(hotel, revision, lastChecked));
 
-                if (File.Exists($"{_apiDirectory}messages/{revision}.json")) continue;
-
-                newRevisions++;
                 ("Extracting Messages(Id, Name, Hash, Structure)... | ", revision).WriteLine(null, ConsoleColor.Yellow);
-
                 HGame game = await HAPI.GetGameAsync(revision).ConfigureAwait(false);
                 game.GenerateMessageHashes();
 
@@ -60,9 +56,15 @@ namespace Habble.Jobs
                     Outgoing = GetMessages(game, new Outgoing(game, _hashesPath))
                 }))
                 .ConfigureAwait(false);
+                await File.WriteAllTextAsync($"{_apiDirectory}revisions/{revision}.json", JsonConvert.SerializeObject(new
+                {
+                    game.Revision,
+                    game.FileLength,
+                    Incoming = GetGroupedMessages(game, new Incoming(game, _hashesPath)),
+                    Outgoing = GetGroupedMessages(game, new Outgoing(game, _hashesPath))
+                }))
+                .ConfigureAwait(false);
             }
-
-            ("Revision Updates Found: ", newRevisions).WriteLine(null, ConsoleColor.Green);
             await File.WriteAllTextAsync($"{_apiDirectory}last.json", JsonConvert.SerializeObject(lastCheckedGroups)).ConfigureAwait(false);
 
             var nextFireDate = context.NextFireTimeUtc ?? DateTimeOffset.MinValue;
@@ -93,6 +95,27 @@ namespace Habble.Jobs
             }
             return messageGroups;
         }
+        private Dictionary<ushort, MessageGroup> GetGroupedMessages(HGame game, Identifiers identifiers)
+        {
+            var messageGroups = new Dictionary<ushort, MessageGroup>();
+            foreach (ushort id in identifiers)
+            {
+                if (id == ushort.MaxValue) continue;
+
+                string structure = null;
+                string name = identifiers.GetName(id);
+                string hash = identifiers.GetHash(id);
+
+                MessageItem message = game.Messages[hash][0];
+                if ((message.Structure?.Length ?? 0) > 0)
+                {
+                    structure = message.Structure;
+                }
+
+                messageGroups.Add(id, new MessageGroup(name, hash, structure));
+            }
+            return messageGroups;
+        }
 
         private struct Message
         {
@@ -104,6 +127,19 @@ namespace Habble.Jobs
             public Message(ushort id, string name, string hash, string structure)
             {
                 Id = id;
+                Name = name;
+                Hash = hash;
+                Structure = structure;
+            }
+        }
+        private struct MessageGroup
+        {
+            public string Name { get; }
+            public string Hash { get; }
+            public string Structure { get; }
+
+            public MessageGroup(string name, string hash, string structure)
+            {
                 Name = name;
                 Hash = hash;
                 Structure = structure;
